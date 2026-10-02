@@ -1,9 +1,83 @@
 # Testing
 
+## The test kits
+
+Each release has two archives that need nothing installed. Every folder in them is complete
+for one platform: the Lua 5.1.4 interpreter, the `llaya` module, the LibLayaX library, the
+scripts and a `run-tests` script that runs them.
+
+`LLaya-0.1.0-testkit-cpu.tar.xz`, with CPU-only libraries:
+
+| Folder | For |
+|---|---|
+| `windows-x64` | 64-bit Windows, processor with AVX2 (Intel since 2013, AMD since Zen) |
+| `windows-x64-compat` | 64-bit Windows on any processor, and x64 programs on Windows on ARM |
+| `windows-arm64` | Windows on ARM, native |
+| `linux-x64` | Linux x86-64, processor with AVX2 |
+| `linux-x64-compat` | Linux x86-64, any processor |
+| `linux-arm64` | Linux ARM64 |
+| `macos-arm64` | macOS on Apple Silicon |
+
+`LLaya-0.1.0-testkit-gpu.tar.xz`, with libraries that have the GPU backend and the CPU
+backend:
+
+| Folder | For |
+|---|---|
+| `windows-x64` | 64-bit Windows with an NVIDIA, AMD or Intel GPU |
+| `linux-x64` | Linux x86-64 with a GPU |
+| `macos-arm64` | macOS on Apple Silicon (MoltenVK is included) |
+
+Unpack with `tar -xf <archive>`; Windows 11 and macOS also open the archive with a double
+click, and older Windows needs 7-Zip. Then, from the folder for your system:
+
+```
+run-tests.bat D:\models\laya          Windows
+sh run-tests.sh /models/laya          Linux, macOS
+```
+
+| Kit | What `run-tests` does |
+|---|---|
+| CPU | 1. the test suite on the CPU; 2. the speed test on the CPU |
+| GPU | 1. the test suite on the GPU, full precision; 2. to 4. the speed test on the GPU with `fp16`, `bf16` and `fp32`; 5. the speed test on the CPU, for comparison |
+
+A step that cannot run on the machine (no GPU, or a precision the GPU does not support)
+prints `NOT RUN:` with the reason, and the script goes on to the next step. To keep the
+output, add `> log.txt 2>&1`.
+
+On macOS the script removes the download quarantine from the folder and, in the GPU kit, sets
+`MVK_CONFIG_LOG_LEVEL=1` so that MoltenVK does not print its 180 lines of information.
+
+The kits contain the standard Lua 5.1.4 interpreter only so that they run on a machine
+without Lua. The license texts of everything inside are in the `licenses` folder of each
+kit.
+
+## The speed test
+
+`speed.lua` is in every kit folder. It measures one backend and precision:
+
+```
+lua speed.lua /models/laya                  the CPU
+lua speed.lua /models/laya vulkan fp16      the GPU, half precision
+lua speed.lua /models/laya vulkan bf16
+lua speed.lua /models/laya vulkan fp32      the GPU, full precision
+```
+
+| Line it prints | Meaning |
+|---|---|
+| `backend: … device: … precision: …` | What is really in use. On a GPU the backend is `Vulkan0`, `Vulkan1`, … and the device is the GPU's name. |
+| `first question after loading` | The first call, which on a GPU includes one-time setup and can take a second or more. |
+| `one question alone` | A single question, best of three. |
+| `batch of 16` | Sixteen questions in one call: the time per question, and questions per second. This is the number that shows what a GPU can do. |
+| `answer: noul = …` | The answer to the reference question, alone and as the last of the batch. |
+| `CPU reference … OK` or `DIFFERENT` | With the english model: whether the answer is within 0.01 of the CPU's 0.8364. |
+
+Times are the library's own measurement (`elapsed_ms` in the answer).
+
 ## Running the tests
 
-The test suite is one Lua file, `test/test.lua` (`test.lua` in the binaries zip). Run it
-from a folder that contains the module and the LibLayaX library:
+The test suite is one Lua file, `test/test.lua` (`test.lua` in the kits and in the binaries
+zip). `run-tests` in a kit runs it for you; by hand, run it from a folder that contains the
+module and the LibLayaX library:
 
 ```
 lua test.lua                        26 checks, no model needed
@@ -68,7 +142,8 @@ Not yet done:
 * the Linux x86-64 module away from the build machine, and with the real model;
 * the GPU backend on Linux through LLaya;
 * the half precisions (`fp16`, `bf16`) through LLaya on any system: the GPU runs above used
-  full precision, which is what the test suite asks for;
+  full precision, which is what the test suite asks for. The GPU kit's `run-tests` measures
+  them;
 * LuaJIT;
 * the `multilingual` and `typed-decisions` models;
 * Lua 5.2, 5.3 and 5.4 on anything but Linux x86-64.
@@ -76,5 +151,4 @@ Not yet done:
 The GPU run on the Mac gives 0.8366 where the CPU gives 0.8364; on the RTX 5080 the GPU and
 the CPU agree to four decimals. A small difference between a GPU and the CPU is normal.
 
-If you run the tests on one of these, the output of `lua test.lua /models/laya` is a useful
-report.
+If you run a kit on one of these, the output of `run-tests` is a useful report.

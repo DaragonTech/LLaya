@@ -151,8 +151,9 @@ including crash reports on Windows.
 
 ## Reporting a problem
 
-A useful report contains the output of these two commands, the system and processor, and the
-complete error message:
+A useful report contains the system and processor, the complete error message, and the output
+of `run-tests` from a test kit ([Testing](testing.md#the-test-kits)). Without a kit, the
+output of these two commands:
 
 ```
 lua -e "local l = require 'llaya'; print(_VERSION, l._VERSION, l.version())"

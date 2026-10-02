@@ -60,6 +60,10 @@ local agent = llaya.new(model, { backend = "vulkan", precision = "fp16" })
 On a GPU, send several questions per call; that is where the speed comes from
 ([Asking questions](asking-questions.md#many-texts-in-one-call)).
 
+To find out which precision is fastest on a particular machine, run the GPU test kit: it
+measures `fp16`, `bf16` and `fp32` there and compares each answer with the CPU's
+([Testing](testing.md#the-test-kits)).
+
 `"cuda"` exists in the engine but is not in any released LibLayaX package.
 
 Through LLaya the GPU backend has been run on an NVIDIA RTX 5080 Laptop GPU (Windows 11) and

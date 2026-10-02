@@ -36,7 +36,34 @@ local json = assert(agent:ask_yes_no("Please refund the duplicate charge.",
 | `LICENSE` | MIT. |
 
 The source builds against **Lua 5.1, 5.2, 5.3 and 5.4**. Ready-made binaries are published for
-**Lua 5.1** only.
+**Lua 5.1** only: the module on its own (`LLaya-0.1.0-lua5.1-binaries.zip`) and inside the two
+test kits.
+
+## Trying it without installing anything
+
+Two **test kits** are published with each release. A kit is a folder per platform that already
+contains everything except the model: the Lua 5.1.4 interpreter, the `llaya` module, the
+LibLayaX library and the scripts.
+
+| Archive | Platforms inside | Library |
+|---|---|---|
+| `LLaya-0.1.0-testkit-cpu.tar.xz` | Windows x64 (two builds), Windows ARM64, Linux x64 (two builds), Linux ARM64, macOS on Apple Silicon | CPU backend |
+| `LLaya-0.1.0-testkit-gpu.tar.xz` | Windows x64, Linux x64, macOS on Apple Silicon | GPU backend (through Vulkan) and CPU backend |
+
+Unpack one (`tar -xf LLaya-0.1.0-testkit-gpu.tar.xz`, or a double click on Windows 11 and
+macOS), go into the folder for your system, and give the script the model folder:
+
+```
+run-tests.bat D:\models\laya          Windows
+sh run-tests.sh /models/laya          Linux, macOS
+```
+
+The CPU kit runs the test suite and a speed test. The GPU kit runs the test suite on the GPU
+and then the speed test with each precision (`fp16`, `bf16`, `fp32`) and on the CPU for
+comparison. See [Testing](docs/testing.md#the-test-kits).
+
+A kit is for trying and testing. To use LLaya in your own program, take the module and the
+library as described next.
 
 ## What you need
 
@@ -151,14 +178,14 @@ The [`docs/`](docs/README.md) folder is the manual.
 
 | Page | Content |
 |---|---|
-| [Getting started](docs/getting-started.md) | The three things to download, where to put them, a first script. |
+| [Getting started](docs/getting-started.md) | The quick way with a test kit; then the three things to download, where to put them, a first script. |
 | [Asking questions](docs/asking-questions.md) | The three kinds of question, several at once, many texts in one call, reading the answers, how long a text can be. |
 | [The module](docs/reference.md) | Every function and method: arguments, results, errors. |
 | [Options](docs/options.md) | CPU or GPU, precision, threads, model variant. |
 | [Tables and JSON](docs/json.md) | How tables become JSON and back, `llaya.null`, `llaya.encode`, `llaya.decode`. |
 | [Installing](docs/installing.md) | How the module finds the library, the Lua DLL on Windows, Lua inside another application. |
 | [Troubleshooting](docs/troubleshooting.md) | Error messages and what to do about them. |
-| [Testing](docs/testing.md) | The test suite and what has been tested where. |
+| [Testing](docs/testing.md) | The test kits, the test suite, the speed test, and what has been tested where. |
 | [Building](docs/building.md) | Building the module for Lua 5.2 to 5.4 or for another platform. |
 
 ## Status

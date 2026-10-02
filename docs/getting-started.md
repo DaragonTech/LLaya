@@ -1,5 +1,32 @@
 # Getting started
 
+## The quick way: a test kit
+
+To see LLaya work before setting anything up, use a test kit from the releases page. A kit
+already contains the Lua interpreter, the module and the library for each platform; only the
+model is missing ([step 3](#3-the-model) below says where to get it).
+
+| Archive | Use it for |
+|---|---|
+| `LLaya-0.1.0-testkit-cpu.tar.xz` | any machine; runs on the processor |
+| `LLaya-0.1.0-testkit-gpu.tar.xz` | Windows x64, Linux x64 or a Mac with Apple Silicon, with a GPU |
+
+```
+tar -xf LLaya-0.1.0-testkit-cpu.tar.xz
+cd LLaya-0.1.0-testkit-cpu/windows-x64          the folder for your system
+run-tests.bat D:\models\laya                    Windows
+sh run-tests.sh /models/laya                    Linux, macOS
+```
+
+It should end with `50 checks, 0 failures`, followed by the speed on your machine. The same
+folder is a working setup: you can put your own script in it and run it with the `lua` that
+is there. [Testing](testing.md#the-test-kits) describes the kits in full.
+
+The rest of this page builds the same setup by hand, which is what you do for your own
+program.
+
+## The parts
+
 A working setup is three things in one folder, plus the model somewhere on disk:
 
 ```

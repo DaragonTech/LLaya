@@ -9,7 +9,7 @@ says what the project is.
 
 | Page | Read it when |
 |---|---|
-| [Getting started](getting-started.md) | You want a first answer: which three things to download, where to put them, a first script. |
+| [Getting started](getting-started.md) | You want a first answer: the quick way with a test kit, then which three things to download, where to put them, a first script. |
 | [Asking questions](asking-questions.md) | You are writing the questions: the three kinds, several at once, many texts in one call, reading the answers. |
 
 ## Reference
@@ -26,7 +26,7 @@ says what the project is.
 | Page | Content |
 |---|---|
 | [Troubleshooting](troubleshooting.md) | Error messages and what to do about them. |
-| [Testing](testing.md) | The test suite, and what has been tested on which system. |
+| [Testing](testing.md) | The test kits, the test suite, the speed test, and what has been tested on which system. |
 | [Building](building.md) | Building the module for your Lua version or for another platform. |
 
 ## The short version
