@@ -1,6 +1,6 @@
-# LLaya
-
 ![LLaya Logo](./llaya-logo.png)
+
+# LLaya
 
 Lua binding for **Laya**, the open typed-decision AI model, running in-process through the
 LibLayaX library (`laya.dll` / `liblaya.so` / `liblaya.dylib`, built from
@@ -24,6 +24,7 @@ local json = assert(agent:ask_yes_no("Please refund the duplicate charge.",
                                      "Does the customer ask for a refund?", "refund"))
 ```
 
+
 | Path | What it is |
 |---|---|
 | `src/llaya.c` | The whole binding: one C file, no dependencies besides Lua's headers. |
@@ -31,6 +32,7 @@ local json = assert(agent:ask_yes_no("Please refund the duplicate charge.",
 | `examples/ask.lua` | A small program that loads a model and asks three questions. |
 | `Makefile` | Builds the module for the Lua on your machine. |
 | `scripts/build-all.sh` | Cross-builds the module for five platforms from Linux. |
+| `docs/` | The manual: installing, asking questions, the full reference, troubleshooting. |
 | `LICENSE` | MIT. |
 
 The source builds against **Lua 5.1, 5.2, 5.3 and 5.4**. Ready-made binaries are published for
@@ -63,36 +65,21 @@ The source builds against **Lua 5.1, 5.2, 5.3 and 5.4**. Ready-made binaries are
        --include "model.safetensors" "rl_agent_config.json" "encoder/*" "tokenizer/*"
    ```
 
-   The folder you pass to `llaya.new` is the one that contains `rl_agent_config.json`. The LibLayaX
-   README ("Getting the model") lists the files needed, the other ways to download them, and how
-   to get the multilingual and typed-decisions variants.
+   The folder you pass to `llaya.new` is the one that contains `rl_agent_config.json`.
+   [Getting started](docs/getting-started.md) lists the files and the other ways to download
+   them.
 
 ### Where the files go
 
-Put the module where `require` looks (`package.cpath`; by default the current folder), and the
-library next to it. The module finds the library by itself, in this order:
-
-1. the file named by the environment variable `LLAYA_LIBRARY`, if set;
-2. the folder the `llaya` module is in;
-3. the system's normal search (the program's folder and `PATH` on Windows,
-   `LD_LIBRARY_PATH` / `DYLD_LIBRARY_PATH` and the standard folders elsewhere).
-
-So on Linux no `LD_LIBRARY_PATH` is needed. If the library cannot be found, `require "llaya"`
-fails with a message that says so.
+Put the module where `require` looks (by default the current folder) and the library next to
+it. The module finds the library in its own folder, so nothing has to be configured, and on
+Linux no `LD_LIBRARY_PATH` is needed. The environment variable `LLAYA_LIBRARY` can name
+another library file.
 
 **Windows only:** a Lua module must use the same Lua DLL as the program that loads it. The
-published Windows binaries ask for **`lua51.dll`**. Two common arrangements both work:
-
-* the program itself uses `lua51.dll`;
-* the program uses `lua5.1.dll` and `lua51.dll` is a proxy that passes every call on to it
-  (the usual LuaBinaries layout). The module then shares the program's Lua through the proxy.
-
-If there is only a `lua5.1.dll` and no proxy, rebuild the module for that name
-(`LUA_DLL=lua5.1 LUA_SRC=... scripts/build-all.sh windows-x64`). If Lua is built into the
-executable itself, the module has to be linked against that executable instead.
-
-If `require "llaya"` reports `cannot load laya.dll (error 193)`, the `laya.dll` next to the
-module is for the other processor type (x64 instead of ARM64, or the reverse).
+published Windows binaries ask for **`lua51.dll`**. A program that uses `lua51.dll` works, and
+so does one that uses `lua5.1.dll` with a `lua51.dll` that forwards to it (the usual
+LuaBinaries layout). For anything else, see [Installing](docs/installing.md).
 
 ## The module
 
@@ -138,8 +125,8 @@ The answer, as JSON text and as the table it becomes:
 
 ```json
 {"results":[{"model":"laya-rl-agent",
-             "answers":{"refund":{"type":"noul","confidence":0.8364,"noul":0.8364,
-                                  "action":{"act_probability":1.0}}},
+             "answers":{"refund":{"type":"noul","confidence":0.8364,
+                                  "action":{"act_probability":1.0},"noul":0.8364}},
              "usage":{"input_tokens":40,"output_tokens":0}}],
  "elapsed_ms":244.9,"backend":"CPU","device":"..."}
 ```
@@ -151,87 +138,42 @@ answer.results[1].answers.anger.score      -- score: the expected level; .legend
 answer.elapsed_ms
 ```
 
-**Options** for `llaya.new` (unknown keys are rejected):
+Errors come back the Lua way: a model that cannot be loaded or a request the library rejects
+gives `nil, message`, so `assert(...)` works, and a failed request leaves the agent usable.
 
-| Key | Values | Default |
-|---|---|---|
-| `backend` | `"cpu"`, `"vulkan"`, `"cuda"` (must be compiled into the library you ship) | `"cpu"` |
-| `variant` | `"english"`, `"multilingual"`, `"typed-decisions"`: picks a subfolder of a model store | folder as given |
-| `precision` | `"fp32"`, `"fp16"`, `"bf16"` (the half precisions need a GPU) | `"fp32"` |
-| `threads` | CPU threads, 0 = all | 0 |
-| `device` | GPU index, or part of its name such as `"RTX"` | first discrete GPU |
-| `flash` | boolean, fused attention (GPU) | on for `fp16`/`bf16`, otherwise off |
-| `tensor_core`, `allow_truncation` | booleans | off |
+To run on the GPU, pass options to `llaya.new`, for example
+`{ backend = "vulkan", precision = "fp16" }`, with a LibLayaX library that includes the GPU
+backend. See [Options](docs/options.md).
 
-## Things worth knowing
+## Documentation
 
-* **Errors.** A model that cannot be loaded or a request the library rejects gives
-  `nil, message`, so `assert(...)` works and a failed request leaves the agent usable. Only a
-  wrong argument type raises a Lua error, as with Lua's own functions.
-* **Tables from JSON.** Arrays become tables indexed from 1. JSON `null` becomes `llaya.null`
-  (not `nil`), so no key is lost. On Lua 5.3 and later, whole numbers are integers.
-* **Tables to JSON.** A table whose keys are exactly 1..n is written as an array, any other
-  table as an object (keys must be strings or numbers). An empty table is written as `{}`.
-  `nil` and `llaya.null` are written as `null`.
-* **Strings.** Everything is UTF-8. Lua strings are passed through unchanged.
-* **Blocking.** A call returns when the model has answered; the Lua state waits meanwhile. For
-  throughput, send several requests in one `predict`.
-* **Memory.** About 1.7 GB per loaded model on CPU. Create one agent per model and keep it.
-* **Debugging.** `LAYA_DEBUG=1` in the environment makes the library print what it is doing at
-  each stage of each call.
+The [`docs/`](docs/README.md) folder is the manual.
 
-## Building
-
-For the Lua on your machine:
-
-```
-make LUA_INCDIR=/usr/include/lua5.1                                    Linux, macOS
-make LUA_INCDIR=C:/lua/include LUA_LIBDIR=C:/lua LUA_LIB=lua51         Windows (MinGW)
-```
-
-`LUA_INCDIR` is the folder with `lua.h`. The LibLayaX library is not needed to build, only to
-run. For all five published platforms at once, from Linux:
-
-```
-LUA_SRC=/path/to/lua-5.1.4/src LLVM_MINGW=/path/to/llvm-mingw scripts/build-all.sh
-```
-
-It writes `out/<platform>/llaya.dll` or `llaya.so`. The header of the script lists the tools it
-needs (Zig, MinGW-w64, llvm-mingw, lld).
-
-## Running the tests
-
-From a folder that contains the module, the library and `test.lua`:
-
-```
-lua test.lua                        model-free checks (26)
-lua test.lua /path/to/model         full run on the CPU (50)
-lua test.lua /path/to/model vulkan  full run on another backend
-lua ask.lua /path/to/model          the example
-```
-
-Exit code 0 means everything passed. The full run covers the JSON encoder and decoder, all three
-question types as text and as tables, table and string requests, batches, Unicode, error
-reporting, `prepare`, `close` and unloading by the garbage collector.
+| Page | Content |
+|---|---|
+| [Getting started](docs/getting-started.md) | The three things to download, where to put them, a first script. |
+| [Asking questions](docs/asking-questions.md) | The three kinds of question, several at once, many texts in one call, reading the answers, how long a text can be. |
+| [The module](docs/reference.md) | Every function and method: arguments, results, errors. |
+| [Options](docs/options.md) | CPU or GPU, precision, threads, model variant. |
+| [Tables and JSON](docs/json.md) | How tables become JSON and back, `llaya.null`, `llaya.encode`, `llaya.decode`. |
+| [Installing](docs/installing.md) | How the module finds the library, the Lua DLL on Windows, Lua inside another application. |
+| [Troubleshooting](docs/troubleshooting.md) | Error messages and what to do about them. |
+| [Testing](docs/testing.md) | The test suite and what has been tested where. |
+| [Building](docs/building.md) | Building the module for Lua 5.2 to 5.4 or for another platform. |
 
 ## Status
 
-Built and tested with LibLayaX 1.0.14. Unless a row says otherwise, the model was a synthetic
-test model (real architecture, random weights):
+Version 0.1.0, built and tested with LibLayaX 1.0.14.
 
-| Lua | Platform | Result |
-|---|---|---|
-| 5.1.4 | Linux x86-64 | full run, 50 checks, 0 failures; also clean under address and undefined-behaviour sanitizers, including a few thousand malformed JSON inputs |
-| 5.1.4 | Windows x64 | **real Windows, real english model** (Windows 11 on ARM running the x64 module under x64 emulation): full run, 50 checks, 0 failures, `noul` 0.8364. Also under Wine with the synthetic model. Not yet on an x64 PC. |
-| 5.1.4 | Linux ARM64 | **real hardware, real english model** (Ubuntu 24.04 ARM64, Parallels on Apple Silicon): full run, 50 checks, 0 failures, `noul` 0.8364 |
-| 5.1.4 | Windows ARM64 | **real hardware, real english model** (Windows 11 on ARM, Parallels on Apple Silicon): full run, 50 checks, 0 failures, `noul` 0.8364 |
-| 5.1.4 | macOS Apple Silicon | **real hardware, real english model** (Apple M3 Ultra): full run, 50 checks, 0 failures, `noul` 0.8364 |
-| 5.1.4 | Windows ARM64 and x64, program on `lua5.1.dll` with a `lua51.dll` proxy | **real Windows, real english model**: full run, 50 checks, 0 failures on both (the x64 one under x64 emulation on the ARM machine). |
-| 5.2.3, 5.3.6, 5.4.9 | Linux x86-64 | full run, 0 failures (built from this source; no binaries published) |
+With **Lua 5.1.4 and the real english model**, the full test suite (50 checks) passes with 0
+failures on Windows x64, Windows ARM64, Linux ARM64 and macOS with Apple Silicon. On Windows
+x64 and on the Mac it passes on the CPU and on the GPU (NVIDIA RTX 5080 Laptop GPU, Apple M3
+Ultra). On Windows both Lua DLL layouts were tried. Lua 5.2, 5.3 and 5.4 pass on Linux x86-64
+with a synthetic test model.
 
-Not yet done: the Windows x64 module on an x64 PC; the Linux x86-64 module outside the build
-machine and with the real model; LuaJIT
-(it uses the Lua 5.1 API, so the source should build against it, but that was not tried).
+Not yet done: the Linux x86-64 module with the real model; the GPU on Linux; the half
+precisions (`fp16`, `bf16`) through LLaya; LuaJIT. The full table is in
+[Testing](docs/testing.md#what-has-been-tested).
 
 ## Credits
 
