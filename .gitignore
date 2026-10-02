@@ -1,0 +1,4 @@
+out/
+llaya.so
+llaya.dll
+*.o
